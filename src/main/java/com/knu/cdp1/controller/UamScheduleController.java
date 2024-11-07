@@ -31,7 +31,7 @@ public class UamScheduleController {
 
 
     @PostMapping("/calculate")
-    public List<FlightInfo> calculateSchedule(@RequestBody List<FlightInfo> flights) {
+    public List<FlightInfo> calculateSchedule() {
         return uamScheduleService.calculateSchedule();
     }
 
