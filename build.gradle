@@ -35,6 +35,8 @@ dependencies {
 
     implementation 'mysql:mysql-connector-java:8.0.32'//mysql 추가
     implementation 'org.springframework.boot:spring-boot-starter-data-jpa'
+
+    implementation 'org.apache.commons:commons-math3:3.6.1'
 }
 
 
