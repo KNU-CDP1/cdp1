@@ -94,7 +94,7 @@ public class UamScheduleService {
             String jsonData = mapper.writeValueAsString(data);
 
             // Python 스크립트 실행
-            ProcessBuilder processBuilder = new ProcessBuilder("python3", "./flight_scheduler.py"); // Python 스크립트 경로 설정
+            ProcessBuilder processBuilder = new ProcessBuilder("python3", "C:\\Users\\84802\\Documents\\gw\\web2\\src\\main\\java\\com\\knu\\cdp1\\service\\flight_scheduler.py"); // Python 스크립트 경로 설정
             Process process = processBuilder.start();
 
             // Python으로 데이터 전송
@@ -129,13 +129,23 @@ public class UamScheduleService {
             for (int i = 0; i < flights.size(); i++) {
                 FlightInfo flight = flights.get(i);
                 Map<String, Object> schedule = scheduleResults.get(i);
-                flight.setAdjustedStart((Integer) schedule.get("adjusted_start_time"));
-                flight.setAdjustedEnd((Integer) schedule.get("adjusted_end_time"));
-                flight.setDelayTime((Integer) schedule.get("delay"));
-                flight.setCancelled((Boolean) schedule.get("cancelled"));
+
+                boolean isCancelled = ((Double) schedule.get("cancelled")) == 1.0;
+                flight.setCancelled(isCancelled);
+
+                if (!isCancelled) {
+                    // 취소되지 않은 경우에만 adjusted 시간을 설정
+                    flight.setAdjustedStart(((Double) schedule.get("adjusted_start_time")).intValue());
+                    flight.setAdjustedEnd(((Double) schedule.get("adjusted_end_time")).intValue());
+                }
+
+                flight.setDelayTime(((Double) schedule.get("delay")).intValue());
                 flight.setCost((Double) schedule.get("cost"));
+
                 flightInfoRepository.save(flight);
             }
+
+
 
         } catch (Exception e) {
             e.printStackTrace();

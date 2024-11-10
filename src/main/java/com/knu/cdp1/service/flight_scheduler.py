@@ -1,7 +1,6 @@
 import json
 import sys
 import pulp
-import pandas as pd
 
 def calculate_weather_risk(wind_speed, rainfall, visibility):
     return (0.4 * wind_speed / 30) + (0.4 * rainfall / 30) + (0.2 * 500 / visibility)
@@ -20,8 +19,12 @@ def calculate_schedule(data):
         weather_base = [calculate_weather_risk(info["wind_speed"], info["rainfall"], info["visibility"]) for info in weather_info]
         pass_num = data['pass_num']
         seat_cost = data['seat_cost']
-        weather_change = [(weather_base[i+1] - weather_base[i]) / 4 for i in range(n)]
         b = data['b']
+
+        # 날씨 변화율 설정
+        weather_change = [(weather_base[i+1] - weather_base[i]) / 4 for i in range(n-1)]
+        weather_change.append(0)  # 마지막 값에 대해 기본값으로 0 추가
+
         Penalty_delay = [50 * pass_num[i] * seat_cost[i] for i in range(n)]
         Penalty_cancel = [500 * pass_num[i] * seat_cost[i] for i in range(n)]
         lambda_risk = data['lambda_risk']
@@ -43,10 +46,6 @@ def calculate_schedule(data):
             problem += planned_end_times[i] + d[i] + 3 <= planned_end_times[i + 1] + d[i + 1] + M * (z[i] + z[i + 1])
         for i in range(n):
             problem += d[i] <= M * (1 - z[i])
-        for i in range(0, n):
-            for j in range(i, n-1):
-                problem += (pulp.lpSum(((1 - z[k]) * M) for k in range(i, j+1)) + planned_start_times[j + 1] + d[j + 1]) >= (planned_start_times[i - 1] + d[i - 1]) + 3
-                problem += (pulp.lpSum(((1 - z[k]) * M) for k in range(i, j+1)) + planned_end_times[j + 1] + d[j + 1]) >= (planned_end_times[i - 1] + d[i - 1]) + 3
         for i in range(n):
             if b[i] == 1:
                 problem += z[i] == 0
@@ -55,7 +54,7 @@ def calculate_schedule(data):
                 problem += (weather_base[i] + weather_change[i] * d[i]) <= 0.5
 
         # 문제 풀기
-        problem.solve()
+        problem.solve(pulp.PULP_CBC_CMD(msg=False))
 
         # 결과 저장
         results = []
@@ -82,6 +81,7 @@ def calculate_schedule(data):
                 "cost": cost
             })
 
+
         # 결과를 JSON으로 반환
         return json.dumps(results)
 
@@ -91,12 +91,10 @@ def calculate_schedule(data):
 
 # JSON 형식의 데이터를 받기
 if __name__ == "__main__":
-    print("Python script started")  # Python이 실행되었는지 확인하기 위한 출력
-    sys.stdout.flush()  # 자바가 즉시 이 출력을 받을 수 있도록 flush
     try:
         input_data = json.loads(sys.stdin.read())
         result = calculate_schedule(input_data)
-        print(result)
+        print(result)  # JSON 데이터만 출력
     except Exception as e:
         sys.stderr.write(f"Error in main: {str(e)}\n")
         sys.exit(1)
