@@ -1,22 +1,20 @@
 package com.knu.cdp1.service;
 
+import com.fasterxml.jackson.databind.ObjectMapper;
 import com.knu.cdp1.model.FlightInfo;
 import com.knu.cdp1.model.Settings;
 import com.knu.cdp1.repository.FlightInfoRepository;
 import com.knu.cdp1.repository.SettingsRepository;
-import org.apache.commons.math3.optim.MaxIter;
-import org.apache.commons.math3.optim.linear.*;
-import org.apache.commons.math3.optim.nonlinear.scalar.GoalType;
-import org.apache.commons.math3.optim.PointValuePair;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 import org.springframework.web.multipart.MultipartFile;
 
-import java.io.BufferedReader;
-import java.io.InputStreamReader;
+import java.io.*;
 import java.nio.charset.StandardCharsets;
 import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 
 @Service
 public class UamScheduleService {
@@ -66,88 +64,82 @@ public class UamScheduleService {
                 .orElseThrow(() -> new RuntimeException("Settings not found"));
         List<FlightInfo> flights = flightInfoRepository.findAll();
 
-        List<LinearConstraint> constraints = new ArrayList<>();
-        double lambdaRisk = settings.getWeatherRiskWeight();
-        int N = flights.size();
-        double M = 1_000_000; // 큰 값으로 상호 배타성 제약 조건을 처리
+        // 필요한 데이터를 Python으로 전달하기 위해 Map에 저장
+        Map<String, Object> data = new HashMap<>();
+        data.put("n", flights.size());
+        data.put("planned_start_times", flights.stream().map(FlightInfo::getPlannedStart).toArray());
+        data.put("planned_end_times", flights.stream().map(FlightInfo::getPlannedEnd).toArray());
+        data.put("delayed_amount", 6); // 지연 시간
 
-        double[] objectiveCoefficients = new double[N * 2]; // 지연(d)와 취소(z) 변수 각각 N개씩
-
-        // 목적 함수 계수 설정 및 페널티 계산
-        for (int i = 0; i < N; i++) {
-            FlightInfo flight = flights.get(i);
-            double delayPenalty = flight.getPassengers() * flight.getSeatCost() * 50;
-            double cancelPenalty = flight.getPassengers() * flight.getSeatCost() * 500;
-            double baseWeatherRisk = calculateWeatherRisk(flight);
-
-            objectiveCoefficients[i] = delayPenalty + lambdaRisk * baseWeatherRisk;  // 지연 페널티
-            objectiveCoefficients[i + N] = cancelPenalty;  // 취소 페널티
-
-            // 지연-취소 상호 배타성 제약 조건 (취소 시 지연 시간이 0이 되도록)
-            double[] delayCancelConstraint = new double[N * 2];
-            delayCancelConstraint[i] = 1;
-            delayCancelConstraint[i + N] = M;
-            constraints.add(new LinearConstraint(delayCancelConstraint, Relationship.LEQ, M));
+        // 날씨 정보 배열 생성
+        List<Map<String, Object>> weatherInfoList = new ArrayList<>();
+        for (FlightInfo flight : flights) {
+            Map<String, Object> weatherInfo = new HashMap<>();
+            weatherInfo.put("wind_speed", flight.getWindSpeed());
+            weatherInfo.put("rainfall", flight.getRainfall());
+            weatherInfo.put("visibility", flight.getVisibility());
+            weatherInfoList.add(weatherInfo);
         }
+        data.put("weather_info", weatherInfoList);
 
-        // 제약 조건 1: 각 비행편 간 출발 시간 최소 3분 간격
-        for (int i = 0; i < N - 1; i++) {
-            double[] startTimeGapConstraint = new double[N * 2];
-            startTimeGapConstraint[i] = 1;
-            startTimeGapConstraint[i + 1] = -1;
-            constraints.add(new LinearConstraint(startTimeGapConstraint, Relationship.LEQ, -3));
-        }
-
-        // 제약 조건 3: 특정 비행은 취소되지 않도록 설정
-        for (int i = 0; i < N; i++) {
-            if (flights.get(i).isInFlight()) {
-                double[] inFlightConstraint = new double[N * 2];
-                inFlightConstraint[i + N] = 1;
-                constraints.add(new LinearConstraint(inFlightConstraint, Relationship.EQ, 0));
-            }
-        }
-
-        // 제약 조건 4: 날씨 위험도는 0.5 이하로 제한
-        for (int i = 0; i < N; i++) {
-            FlightInfo flight = flights.get(i);
-            double weatherChange = calculateWeatherRiskChange(flight);
-            double[] weatherRiskConstraint = new double[N * 2];
-            weatherRiskConstraint[i] = weatherChange;
-            constraints.add(new LinearConstraint(weatherRiskConstraint, Relationship.LEQ, 0.5 - calculateWeatherRisk(flight)));
-        }
-
-        // SimplexSolver를 사용하여 선형 계획법 문제 해결
-        LinearObjectiveFunction objectiveFunction = new LinearObjectiveFunction(objectiveCoefficients, 0);
-        SimplexSolver solver = new SimplexSolver();
+        data.put("pass_num", flights.stream().map(FlightInfo::getPassengers).toArray());
+        data.put("seat_cost", flights.stream().map(FlightInfo::getSeatCost).toArray());
+        data.put("b", flights.stream().map(FlightInfo::isInFlight).toArray());
+        data.put("lambda_risk", settings.getWeatherRiskWeight());
+        data.put("M", 1_000_000);
 
         try {
-            PointValuePair solution = solver.optimize(new MaxIter(100),
-                    new LinearConstraintSet(constraints),
-                    GoalType.MINIMIZE,
-                    new NonNegativeConstraint(true));
-            double[] results = solution.getPoint();
+            // JSON 형식으로 데이터 직렬화
+            ObjectMapper mapper = new ObjectMapper();
+            String jsonData = mapper.writeValueAsString(data);
 
-            // 최적화 결과를 각 FlightInfo에 반영
-            for (int i = 0; i < N; i++) {
+            // Python 스크립트 실행
+            ProcessBuilder processBuilder = new ProcessBuilder("python3", "./flight_scheduler.py"); // Python 스크립트 경로 설정
+            Process process = processBuilder.start();
+
+            // Python으로 데이터 전송
+            BufferedWriter writer = new BufferedWriter(new OutputStreamWriter(process.getOutputStream()));
+            writer.write(jsonData);
+            writer.flush();
+            writer.close();
+
+            // Python에서 결과 받아오기
+            BufferedReader reader = new BufferedReader(new InputStreamReader(process.getInputStream()));
+            StringBuilder result = new StringBuilder();
+            String line;
+            while ((line = reader.readLine()) != null) {
+                result.append(line);
+            }
+
+            // Python 에러 출력 받기
+            BufferedReader errorReader = new BufferedReader(new InputStreamReader(process.getErrorStream()));
+            StringBuilder errorResult = new StringBuilder();
+            while ((line = errorReader.readLine()) != null) {
+                errorResult.append(line).append("\n");
+            }
+
+            // 프로세스 종료 후 오류 확인
+            int exitCode = process.waitFor();
+            if (exitCode != 0) {
+                throw new RuntimeException("Python script failed with error: " + errorResult.toString());
+            }
+
+            // JSON 결과 파싱
+            List<Map<String, Object>> scheduleResults = mapper.readValue(result.toString(), List.class);
+            for (int i = 0; i < flights.size(); i++) {
                 FlightInfo flight = flights.get(i);
-                int delayTime = (int) results[i];
-                boolean isCancelled = results[i + N] > 0.5;
-
-                flight.setDelayTime(delayTime);
-                flight.setCancelled(isCancelled);
-
-                // 출발 및 도착 시간 설정
-                flight.setAdjustedStart(isCancelled ? -1 : flight.getPlannedStart() + delayTime);
-                flight.setAdjustedEnd(isCancelled ? -1 : flight.getPlannedEnd() + delayTime);
-
-                // 비용 설정
-                flight.setCost(isCancelled ? objectiveCoefficients[i + N] : objectiveCoefficients[i] * delayTime);
-
+                Map<String, Object> schedule = scheduleResults.get(i);
+                flight.setAdjustedStart((Integer) schedule.get("adjusted_start_time"));
+                flight.setAdjustedEnd((Integer) schedule.get("adjusted_end_time"));
+                flight.setDelayTime((Integer) schedule.get("delay"));
+                flight.setCancelled((Boolean) schedule.get("cancelled"));
+                flight.setCost((Double) schedule.get("cost"));
                 flightInfoRepository.save(flight);
             }
 
         } catch (Exception e) {
             e.printStackTrace();
+            throw new RuntimeException("Failed to execute Python script: " + e.getMessage());
         }
 
         return flights;
@@ -163,9 +155,5 @@ public class UamScheduleService {
         }
 
         return (0.4 * windSpeed / 30) + (0.4 * rainfall / 30) + (0.2 * 500 / visibility);
-    }
-
-    private double calculateWeatherRiskChange(FlightInfo flight) {
-        return 0.1; // 예시 값으로, 필요에 따라 조정 가능
     }
 }
