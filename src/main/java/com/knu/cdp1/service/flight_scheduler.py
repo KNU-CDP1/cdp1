@@ -11,8 +11,12 @@ def calculate_schedule(data):
         n = data['n']
         planned_start_times = data['planned_start_times']
         planned_end_times = data['planned_end_times']
-        delayed_amount = data['delayed_amount']
-        planned_end_times[0] += delayed_amount
+        # delayed_amount = data['delayed_amount']
+        # planned_end_times[0] += delayed_amount
+        is_delayed = data['is_delayed']
+
+        for i in range(len(is_delayed)):
+            planned_end_times[i] += is_delayed[i]
 
         # 날씨 정보와 기타 데이터 설정
         weather_info = data['weather_info']
@@ -78,7 +82,8 @@ def calculate_schedule(data):
                 "adjusted_end_time": adjust_end_time,
                 "delay": delay,
                 "cancelled": cancelled,
-                "cost": cost
+                "cost": cost,
+                "is_delayed": is_delayed[i]
             })
 
 

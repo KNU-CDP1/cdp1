@@ -34,14 +34,14 @@ public class UamScheduleService {
                 FlightInfo flight = new FlightInfo();
                 flight.setFlightNumber(data[0]);
                 flight.setPassengers(Integer.parseInt(data[1]));
-                flight.setSeats(Integer.parseInt(data[2]));
+
                 flight.setCost(Double.parseDouble(data[3]));
 
                 // 추가된 필드에 맞춰 데이터 초기화
                 flight.setPlannedStart(Integer.parseInt(data[4]));
                 flight.setPlannedEnd(Integer.parseInt(data[5]));
-                flight.setWeather(data[6]);
-                flight.setInFlight(data[8].equalsIgnoreCase("In flight"));
+                flight.setWeather(data[6]);//필요x
+                flight.setInFlight(data[8].equalsIgnoreCase("In flight"));//필요x
                 flight.setSeatCost(Double.parseDouble(data[9]));
 
                 flight.setDelayTime(0);
@@ -69,7 +69,7 @@ public class UamScheduleService {
         data.put("n", flights.size());
         data.put("planned_start_times", flights.stream().map(FlightInfo::getPlannedStart).toArray());
         data.put("planned_end_times", flights.stream().map(FlightInfo::getPlannedEnd).toArray());
-        data.put("delayed_amount", 6); // 지연 시간
+        data.put("is_delayed", flights.stream().map(FlightInfo::isDelayed).toArray());
 
         // 날씨 정보 배열 생성
         List<Map<String, Object>> weatherInfoList = new ArrayList<>();
@@ -135,7 +135,7 @@ public class UamScheduleService {
 
                 if (!isCancelled) {
                     // 취소되지 않은 경우에만 adjusted 시간을 설정
-                    flight.setAdjustedStart(((Double) schedule.get("adjusted_start_time")).intValue());
+                    flight.setAdjustedStart((Integer) schedule.get("adjusted_start_time"));
                     flight.setAdjustedEnd(((Double) schedule.get("adjusted_end_time")).intValue());
                 }
 

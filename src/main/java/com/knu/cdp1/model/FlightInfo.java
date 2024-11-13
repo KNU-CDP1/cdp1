@@ -13,10 +13,7 @@ public class FlightInfo {
 
     private String flightNumber;
     private int passengers;
-    private int seats;
     private double cost;
-    private String departure;
-    private String arrival;
     private String weather;
     private int plannedStart;
     private int plannedEnd;
@@ -36,7 +33,7 @@ public class FlightInfo {
     private double visibility;
 
     // 지연 여부 필드
-    private boolean isDelayed;
+    private int isDelayed;
 
     // Getters and Setters
     public Long getId() {
@@ -63,13 +60,6 @@ public class FlightInfo {
         this.passengers = passengers;
     }
 
-    public int getSeats() {
-        return seats;
-    }
-
-    public void setSeats(int seats) {
-        this.seats = seats;
-    }
 
     public double getCost() {
         return cost;
@@ -79,21 +69,6 @@ public class FlightInfo {
         this.cost = cost;
     }
 
-    public String getDeparture() {
-        return departure;
-    }
-
-    public void setDeparture(String departure) {
-        this.departure = departure;
-    }
-
-    public String getArrival() {
-        return arrival;
-    }
-
-    public void setArrival(String arrival) {
-        this.arrival = arrival;
-    }
 
     public String getWeather() {
         return weather;
@@ -199,11 +174,11 @@ public class FlightInfo {
         this.visibility = visibility;
     }
 
-    public boolean isDelayed() {
+    public int isDelayed() {
         return isDelayed;
     }
 
-    public void setDelayed(boolean isDelayed) {
+    public void setDelayed(int isDelayed) {
         this.isDelayed = isDelayed;
     }
 }
