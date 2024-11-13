@@ -33,6 +33,12 @@ public class UamScheduleService {
     @Autowired
     private UploadHistoryRepository uploadHistoryRepository;
 
+
+    // 모든 FlightInfo 데이터를 반환하는 메소드
+    public List<FlightInfo> getAllFlights() {
+        return flightInfoRepository.findAll();
+    }
+
     public List<Map<String, Object>> getScheduleHistory() {
         // UploadHistory 엔티티에서 모든 레코드를 가져와서, 각 레코드를 Map으로 변환하여 리스트로 반환
         return uploadHistoryRepository.findAll().stream().map(uploadHistory -> {
