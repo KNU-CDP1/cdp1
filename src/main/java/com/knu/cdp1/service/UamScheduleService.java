@@ -120,7 +120,7 @@ public class UamScheduleService {
         data.put("pass_num", flights.stream().map(FlightInfo::getPassengers).toArray());
         data.put("seat_cost", flights.stream().map(FlightInfo::getSeatCost).toArray());
         data.put("b", flights.stream().map(FlightInfo::isInFlight).toArray());
-        data.put("lambda_risk", settings.getWeatherRiskWeight());
+        data.put("lambda_risk", settings.getRiskAlpha());
         data.put("M", 1_000_000);
 
         try {
