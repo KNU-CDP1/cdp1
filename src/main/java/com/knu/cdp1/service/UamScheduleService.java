@@ -9,6 +9,7 @@ import com.knu.cdp1.repository.SettingsRepository;
 import com.knu.cdp1.repository.UploadHistoryRepository;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
+import org.springframework.web.context.request.WebRequest;
 import org.springframework.web.multipart.MultipartFile;
 
 import java.io.*;
@@ -18,6 +19,7 @@ import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.stream.Collectors;
 
 @Service
 public class UamScheduleService {
@@ -31,7 +33,19 @@ public class UamScheduleService {
     @Autowired
     private UploadHistoryRepository uploadHistoryRepository;
 
-    public List<FlightInfo> saveFlightsFromCsv(MultipartFile file, String details) {
+    public List<Map<String, Object>> getScheduleHistory() {
+        // UploadHistory 엔티티에서 모든 레코드를 가져와서, 각 레코드를 Map으로 변환하여 리스트로 반환
+        return uploadHistoryRepository.findAll().stream().map(uploadHistory -> {
+            Map<String, Object> record = new HashMap<>();
+            record.put("csv", uploadHistory.getFileName());
+            record.put("details", uploadHistory.getDetails());
+            record.put("author", uploadHistory.getAuthor());
+            record.put("uploadDate", uploadHistory.getUploadDate());
+            return record;
+        }).collect(Collectors.toList());
+    }
+
+    public List<FlightInfo> saveFlightsFromCsv(MultipartFile file, String details, WebRequest request) {
         List<String> flightNames = new ArrayList<>();
 
         try (BufferedReader reader = new BufferedReader(new InputStreamReader(file.getInputStream(), StandardCharsets.UTF_8))) {
@@ -66,8 +80,12 @@ public class UamScheduleService {
             String fileName = file.getOriginalFilename();
             String joinedFlightNames = String.join(", ", flightNames);
             LocalDateTime uploadDate = LocalDateTime.now();
+            String authorIp = request.getHeader("X-FORWARDED-FOR"); // 프록시나 로드밸런서 환경에서 클라이언트 IP 가져오기
+            if (authorIp == null) {
+                authorIp = "none";
+            }
 
-            UploadHistory uploadHistory = new UploadHistory(fileName, joinedFlightNames, uploadDate, details);
+            UploadHistory uploadHistory = new UploadHistory(fileName, joinedFlightNames, uploadDate, details, authorIp);
             uploadHistoryRepository.save(uploadHistory);
         } catch (Exception e) {
             e.printStackTrace();
