@@ -3,14 +3,17 @@ package com.knu.cdp1.service;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.knu.cdp1.model.FlightInfo;
 import com.knu.cdp1.model.Settings;
+import com.knu.cdp1.model.UploadHistory;
 import com.knu.cdp1.repository.FlightInfoRepository;
 import com.knu.cdp1.repository.SettingsRepository;
+import com.knu.cdp1.repository.UploadHistoryRepository;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 import org.springframework.web.multipart.MultipartFile;
 
 import java.io.*;
 import java.nio.charset.StandardCharsets;
+import java.time.LocalDateTime;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
@@ -25,33 +28,47 @@ public class UamScheduleService {
     @Autowired
     private SettingsRepository settingsRepository;
 
-    public List<FlightInfo> saveFlightsFromCsv(MultipartFile file) {
+    @Autowired
+    private UploadHistoryRepository uploadHistoryRepository;
+
+    public List<FlightInfo> saveFlightsFromCsv(MultipartFile file, String details) {
+        List<String> flightNames = new ArrayList<>();
+
         try (BufferedReader reader = new BufferedReader(new InputStreamReader(file.getInputStream(), StandardCharsets.UTF_8))) {
             String line;
             reader.readLine(); // 첫 줄 (헤더) 건너뛰기
+
             while ((line = reader.readLine()) != null) {
                 String[] data = line.split(",");
                 FlightInfo flight = new FlightInfo();
+
                 flight.setFlightNumber(data[0]);
-                flight.setPassengers(Integer.parseInt(data[1]));
-
-                flight.setCost(Double.parseDouble(data[3]));
-
-                // 추가된 필드에 맞춰 데이터 초기화
-                flight.setPlannedStart(Integer.parseInt(data[4]));
-                flight.setPlannedEnd(Integer.parseInt(data[5]));
-                flight.setWeather(data[6]);//필요x
-                flight.setInFlight(data[8].equalsIgnoreCase("In flight"));//필요x
-                flight.setSeatCost(Double.parseDouble(data[9]));
-
+                flight.setPlannedStart(Integer.parseInt(data[1]));
+                flight.setPlannedEnd(Integer.parseInt(data[2]));
+                flight.setPassengers(Integer.parseInt(data[3]));
+                flight.setSeatCost(Double.parseDouble(data[4]));
                 flight.setDelayTime(0);
                 flight.setCancelled(false);
-                flight.setAdjustedStart(flight.getPlannedStart());
-                flight.setAdjustedEnd(flight.getPlannedEnd());
+                flight.setAdjustedStart(0);
+                flight.setAdjustedEnd(0);
+                flight.setWindSpeed(Double.parseDouble(data[5]));
+                flight.setRainfall(Double.parseDouble(data[6]));
+                flight.setVisibility(Double.parseDouble(data[7]));
                 flight.setRisk(calculateWeatherRisk(flight));
+
+                flightNames.add(flight.getFlightNumber()); // flightNumber를 flightNames 목록에 추가
                 flightInfoRepository.save(flight);
             }
-            this.calculateSchedule();
+
+//            this.calculateSchedule();
+
+            // UploadHistory에 업로드 기록 저장
+            String fileName = file.getOriginalFilename();
+            String joinedFlightNames = String.join(", ", flightNames);
+            LocalDateTime uploadDate = LocalDateTime.now();
+
+            UploadHistory uploadHistory = new UploadHistory(fileName, joinedFlightNames, uploadDate, details);
+            uploadHistoryRepository.save(uploadHistory);
         } catch (Exception e) {
             e.printStackTrace();
             throw new RuntimeException("Failed to parse CSV file: " + e.getMessage());
