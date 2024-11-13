@@ -1,24 +1,71 @@
 package com.knu.cdp1.model;
 
 import jakarta.persistence.*;
-import lombok.Getter;
-import lombok.Setter;
 
 import java.time.LocalDateTime;
 
-@Setter
-@Getter
 @Entity
-@Table(name = "upload_history")
 public class UploadHistory {
 
-    // Getters and Setters
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
 
     private String fileName;
-    private String uamList; // "UAM1, UAM2, ..." 형식으로 저장
-    private LocalDateTime uploadTime;
 
+    private String flightNames;
+
+    private LocalDateTime uploadDate;
+
+    @Column(columnDefinition = "TEXT")
+    private String details;
+
+    // 기본 생성자
+    public UploadHistory() {
+    }
+
+    // 생성자
+    public UploadHistory(String fileName, String flightNames, LocalDateTime uploadDate, String details) {
+        this.fileName = fileName;
+        this.flightNames = flightNames;
+        this.uploadDate = uploadDate;
+        this.details = details;
+    }
+
+    // Getter와 Setter
+    public Long getId() {
+        return id;
+    }
+
+    public String getFileName() {
+        return fileName;
+    }
+
+    public void setFileName(String fileName) {
+        this.fileName = fileName;
+    }
+
+    public String getFlightNames() {
+        return flightNames;
+    }
+
+    public void setFlightNames(String flightNames) {
+        this.flightNames = flightNames;
+    }
+
+    public LocalDateTime getUploadDate() {
+        return uploadDate;
+    }
+
+    public void setUploadDate(LocalDateTime uploadDate) {
+        this.uploadDate = uploadDate;
+    }
+
+    public String getDetails() {
+        return details;
+    }
+
+    public void setDetails(String details) {
+        this.details = details;
+    }
 }

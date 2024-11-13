@@ -10,7 +10,7 @@ import org.springframework.web.multipart.MultipartFile;
 import java.util.List;
 
 @RestController
-@RequestMapping("/api/schedule")
+@RequestMapping("/api")
 public class UamScheduleController {
 
     @Autowired
@@ -23,9 +23,9 @@ public class UamScheduleController {
 //        return ResponseEntity.ok(flights);
 //    }
 
-    @PostMapping("/upload")
-    public ResponseEntity<List<FlightInfo>> uploadCsv(@RequestParam("file") MultipartFile file) {
-        List<FlightInfo> flights = uamScheduleService.saveFlightsFromCsv(file);
+    @PostMapping("/Schedule")
+    public ResponseEntity<List<FlightInfo>> uploadCsv(@RequestParam("file") MultipartFile file, @RequestParam("details") String details) {
+        List<FlightInfo> flights = uamScheduleService.saveFlightsFromCsv(file, details);
         return ResponseEntity.ok(flights);
     }
 
