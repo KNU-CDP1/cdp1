@@ -44,8 +44,8 @@ public class UamScheduleController {
 
     // 모든 FlightInfo 데이터를 반환하는 GET 메소드
     @GetMapping("/schedule")
-    public List<FlightInfo> getAllFlightData() {
-        List<FlightInfo> flightData = uamScheduleService.getAllFlights();
+    public List<Map<String, Object>> getAllFlightData() {
+        List<Map<String, Object>> flightData = uamScheduleService.getAllFlights();
         return flightData;
     }
 

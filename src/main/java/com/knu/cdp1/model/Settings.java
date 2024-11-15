@@ -18,6 +18,8 @@ public class Settings {
     private int cancelCost;     // 기존 cancelPenalty
     private int riskAlpha;      // 기존 weatherRiskWeight
 
+    private String time;
+
     // Getter and Setter for id
     public Long getId() {
         return id;
@@ -52,5 +54,13 @@ public class Settings {
 
     public void setRiskAlpha(int riskAlpha) {
         this.riskAlpha = riskAlpha;
+    }
+
+    public String getTime() {
+        return time;
+    }
+
+    public void setTime(String time) {
+        this.time = time;
     }
 }

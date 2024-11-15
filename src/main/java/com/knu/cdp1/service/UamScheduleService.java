@@ -8,6 +8,7 @@ import com.knu.cdp1.repository.FlightInfoRepository;
 import com.knu.cdp1.repository.SettingsRepository;
 import com.knu.cdp1.repository.UploadHistoryRepository;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.format.annotation.DateTimeFormat;
 import org.springframework.stereotype.Service;
 import org.springframework.web.context.request.WebRequest;
 import org.springframework.web.multipart.MultipartFile;
@@ -15,6 +16,7 @@ import org.springframework.web.multipart.MultipartFile;
 import java.io.*;
 import java.nio.charset.StandardCharsets;
 import java.time.LocalDateTime;
+import java.time.format.DateTimeFormatter;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
@@ -35,8 +37,27 @@ public class UamScheduleService {
 
 
     // 모든 FlightInfo 데이터를 반환하는 메소드
-    public List<FlightInfo> getAllFlights() {
-        return flightInfoRepository.findAll();
+    public List<Map<String, Object>> getAllFlights() {
+        List<FlightInfo> flightData = flightInfoRepository.findAll();
+
+        return flightData.stream().map(flight -> {
+            Map<String, Object> flightMap = new HashMap<>();
+            flightMap.put("id", flight.getId());
+            flightMap.put("flightNumber", flight.getFlightNumber());
+            flightMap.put("passengers", flight.getPassengers());
+            flightMap.put("seats", flight.getSeatCost());
+            flightMap.put("date", flight.getDate());
+            flightMap.put("weather", flight.getWeather());
+            flightMap.put("status", calculateStatus(flight));
+
+            Map <String, String> time = calculateFlightTimes(flight);
+            flightMap.put("plannedDeparture", time.get("plannedDeparture"));
+            flightMap.put("plannedArrival", time.get("plannedArrival"));
+            flightMap.put("adjustedDeparture", time.get("adjustedDeparture"));
+            flightMap.put("adjustedArrival", time.get("adjustedArrival"));
+
+            return flightMap;
+        }).collect(Collectors.toList());
     }
 
     public List<Map<String, Object>> getScheduleHistory() {
@@ -178,8 +199,8 @@ public class UamScheduleService {
 
                 if (!isCancelled) {
                     // 취소되지 않은 경우에만 adjusted 시간을 설정
-                    flight.setAdjustedStart((Integer) schedule.get("adjusted_start_time"));
-                    flight.setAdjustedEnd(((Double) schedule.get("adjusted_end_time")).intValue());
+                    flight.setAdjustedStart(((Number) schedule.get("adjusted_start_time")).intValue());//json 에서 가져올 때, double로 바꿔서 오류나는 것 해결
+                    flight.setAdjustedEnd(((Number) schedule.get("adjusted_end_time")).intValue());
                 }
 
                 flight.setDelayTime(((Double) schedule.get("delay")).intValue());
@@ -228,4 +249,90 @@ public class UamScheduleService {
         }
 
     }
+
+    private String calculateStatus(FlightInfo flight) {
+        // Settings에서 현재 시간을 가져오기
+        Settings settings = settingsRepository.findById(1L)
+                .orElseThrow(() -> new RuntimeException("Settings not found"));
+
+        String now = settings.getTime(); // 예: "2024-11-15 12:00:00"
+
+        // FlightInfo에서 출발 및 도착 시간을 가져오기
+        String departureTime = calculateFlightTimes(flight).get("adjustedDeparture");
+        String arrivalTime = calculateFlightTimes(flight).get("adjustedArrival");
+
+        // String을 LocalDateTime으로 변환
+        DateTimeFormatter formatter = DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm:ss");
+        LocalDateTime nowTime = LocalDateTime.parse(now, formatter);
+        LocalDateTime departure = LocalDateTime.parse(departureTime, formatter);
+        LocalDateTime arrival = LocalDateTime.parse(arrivalTime, formatter);
+
+        // 상태 계산
+        if (flight.isCancelled()){
+            return "Cancelled";
+        }
+        else if (nowTime.isAfter(arrival)) {
+            return "Completed"; // 현재 시간이 도착 시간 이후
+        }
+        else if (flight.isDelayed() > 0) {
+            return "Delayed"; // 현재 시간이 출발 시간 이전
+        }
+        else if (nowTime.isBefore(departure)) {
+            return "Scheduled"; // 현재 시간이 출발 시간 이전
+        } else if (nowTime.isAfter(departure) && nowTime.isBefore(arrival)) {
+            return "In Flight"; // 현재 시간이 출발과 도착 시간 사이
+        }  else {
+            return "Unknown"; // 예외적인 경우
+        }
+    }
+
+
+    public static Map<String, String> calculateFlightTimes(FlightInfo flight) {
+        Map<String, String> flightMap = new HashMap<>();
+
+        DateTimeFormatter formatter = DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm:ss");
+
+        // 날짜 정보 가져오기
+        int date = flight.getDate();
+
+        // plannedDeparture 계산
+        LocalDateTime plannedDeparture = LocalDateTime.of(
+                Integer.parseInt(String.valueOf(date).substring(0, 4)),
+                Integer.parseInt(String.valueOf(date).substring(4, 6)),
+                Integer.parseInt(String.valueOf(date).substring(6, 8)),
+                0, 0,0
+        ).plusMinutes(flight.getPlannedStart());
+        flightMap.put("plannedDeparture", plannedDeparture.format(formatter));
+
+        // plannedArrival 계산
+        LocalDateTime plannedArrival = LocalDateTime.of(
+                Integer.parseInt(String.valueOf(date).substring(0, 4)),
+                Integer.parseInt(String.valueOf(date).substring(4, 6)),
+                Integer.parseInt(String.valueOf(date).substring(6, 8)),
+                0, 0,0
+        ).plusMinutes(flight.getPlannedEnd());
+        flightMap.put("plannedArrival", plannedArrival.format(formatter));
+
+        // adjustedDeparture 계산
+        LocalDateTime adjustedDeparture = LocalDateTime.of(
+                Integer.parseInt(String.valueOf(date).substring(0, 4)),
+                Integer.parseInt(String.valueOf(date).substring(4, 6)),
+                Integer.parseInt(String.valueOf(date).substring(6, 8)),
+                0, 0,0
+        ).plusMinutes(flight.getAdjustedStart());
+        flightMap.put("adjustedDeparture", adjustedDeparture.format(formatter));
+
+        // adjustedArrival 계산
+        LocalDateTime adjustedArrival = LocalDateTime.of(
+                Integer.parseInt(String.valueOf(date).substring(0, 4)),
+                Integer.parseInt(String.valueOf(date).substring(4, 6)),
+                Integer.parseInt(String.valueOf(date).substring(6, 8)),
+                0, 0,0
+        ).plusMinutes(flight.getAdjustedEnd());
+        flightMap.put("adjustedArrival", adjustedArrival.format(formatter));
+
+        return flightMap;
+    }
+
+
 }
