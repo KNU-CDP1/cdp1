@@ -25,36 +25,21 @@ public class UploadHistory {
 
     private String author;
 
+    private String title;
+
     // 기본 생성자
     public UploadHistory() {
     }
 
     // 생성자
-    public UploadHistory(String fileName, String flightNames, LocalDateTime uploadDate, String details , String author) {
+    public UploadHistory(String fileName, String flightNames, LocalDateTime uploadDate, String title, String details , String author) {
         this.fileName = fileName;
         this.flightNames = flightNames;
         this.uploadDate = uploadDate;
         this.details = details;
         this.author = author;
+        this.title = title;
     }
 
-    public void setFileName(String fileName) {
-        this.fileName = fileName;
-    }
 
-    public void setFlightNames(String flightNames) {
-        this.flightNames = flightNames;
-    }
-
-    public void setUploadDate(LocalDateTime uploadDate) {
-        this.uploadDate = uploadDate;
-    }
-
-    public void setDetails(String details) {
-        this.details = details;
-    }
-
-    public void setAuthor(String author) {
-        this.author = author;
-    }
 }

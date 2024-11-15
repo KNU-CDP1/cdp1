@@ -42,6 +42,9 @@ public class SettingsController {
                     case "riskAlpha":
                         settings.setRiskAlpha((int) value);
                         break;
+                    case "time":
+                        settings.setTime((String) value);
+                        break;
                     default:
                         // 예상하지 못한 키는 무시
                         break;

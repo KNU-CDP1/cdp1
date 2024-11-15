@@ -24,9 +24,9 @@ public class UamScheduleController {
         return history;
     }
 
-    @PostMapping("/Schedule")
-    public ResponseEntity<List<FlightInfo>> uploadCsv(@RequestParam("file") MultipartFile file, @RequestParam("details") String details, WebRequest request) {
-        List<FlightInfo> flights = uamScheduleService.saveFlightsFromCsv(file, details, request);
+    @PostMapping("/schedule")
+    public ResponseEntity<List<FlightInfo>> uploadCsv(@RequestParam("file") MultipartFile file,@RequestParam("title") String title, @RequestParam("details") String details, WebRequest request) {
+        List<FlightInfo> flights = uamScheduleService.saveFlightsFromCsv(file, title, details, request);
         return ResponseEntity.ok(flights);
     }
 
@@ -40,4 +40,16 @@ public class UamScheduleController {
     public String test() {
         return "UAM Scheduling API is running.";
     }
+
+
+    // 모든 FlightInfo 데이터를 반환하는 GET 메소드
+    @GetMapping("/schedule")
+    public List<Map<String, Object>> getAllFlightData() {
+        List<Map<String, Object>> flightData = uamScheduleService.getAllFlights();
+        return flightData;
+    }
+
+
+
+
 }
