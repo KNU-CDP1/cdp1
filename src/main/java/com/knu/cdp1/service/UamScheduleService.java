@@ -43,6 +43,7 @@ public class UamScheduleService {
         // UploadHistory 엔티티에서 모든 레코드를 가져와서, 각 레코드를 Map으로 변환하여 리스트로 반환
         return uploadHistoryRepository.findAll().stream().map(uploadHistory -> {
             Map<String, Object> record = new HashMap<>();
+            record.put("title", uploadHistory.getTitle());
             record.put("csv", uploadHistory.getFileName());
             record.put("details", uploadHistory.getDetails());
             record.put("author", uploadHistory.getAuthor());
@@ -51,7 +52,7 @@ public class UamScheduleService {
         }).collect(Collectors.toList());
     }
 
-    public List<FlightInfo> saveFlightsFromCsv(MultipartFile file, String details, WebRequest request) {
+    public List<FlightInfo> saveFlightsFromCsv(MultipartFile file, String title, String details, WebRequest request) {
         List<String> flightNames = new ArrayList<>();
 
         try (BufferedReader reader = new BufferedReader(new InputStreamReader(file.getInputStream(), StandardCharsets.UTF_8))) {
@@ -63,19 +64,20 @@ public class UamScheduleService {
                 FlightInfo flight = new FlightInfo();
 
                 flight.setFlightNumber(data[0]);
-                flight.setPlannedStart(Integer.parseInt(data[1]));
-                flight.setPlannedEnd(Integer.parseInt(data[2]));
-                flight.setPassengers(Integer.parseInt(data[3]));
-                flight.setSeatCost(Double.parseDouble(data[4]));
+                flight.setDate(Integer.parseInt(data[1]));
+                flight.setPlannedStart(Integer.parseInt(data[2]));
+                flight.setPlannedEnd(Integer.parseInt(data[3]));
+                flight.setPassengers(Integer.parseInt(data[4]));
+                flight.setSeatCost(Double.parseDouble(data[5]));
                 flight.setDelayTime(0);
-                flight.setCancelled(false);
+                flight.setCancelled(false); 
                 flight.setAdjustedStart(0);
                 flight.setAdjustedEnd(0);
-                flight.setWindSpeed(Double.parseDouble(data[5]));
-                flight.setRainfall(Double.parseDouble(data[6]));
-                flight.setVisibility(Double.parseDouble(data[7]));
+                flight.setWindSpeed(Double.parseDouble(data[6]));
+                flight.setRainfall(Double.parseDouble(data[7]));
+                flight.setVisibility(Double.parseDouble(data[8]));
                 flight.setRisk(calculateWeatherRisk(flight));
-
+                flight.setWeather(calculateWeather(flight));
                 flightNames.add(flight.getFlightNumber()); // flightNumber를 flightNames 목록에 추가
                 flightInfoRepository.save(flight);
             }
@@ -91,7 +93,7 @@ public class UamScheduleService {
                 authorIp = "none";
             }
 
-            UploadHistory uploadHistory = new UploadHistory(fileName, joinedFlightNames, uploadDate, details, authorIp);
+            UploadHistory uploadHistory = new UploadHistory(fileName, joinedFlightNames, uploadDate, title, details, authorIp);
             uploadHistoryRepository.save(uploadHistory);
         } catch (Exception e) {
             e.printStackTrace();
@@ -206,5 +208,24 @@ public class UamScheduleService {
         }
 
         return (0.4 * windSpeed / 30) + (0.4 * rainfall / 30) + (0.2 * 500 / visibility);
+    }
+
+    private String calculateWeather(FlightInfo flight) {
+        double windSpeed = flight.getWindSpeed();
+        double rainfall = flight.getRainfall();
+        double visibility = flight.getVisibility();
+
+        if (rainfall > 0 ){
+            return "rain";
+        }
+        else if (windSpeed > 20){
+            return "windy";
+        }
+        else if (visibility < 5500){
+            return "cloudy";
+        }else {
+            return "sunny";
+        }
+
     }
 }

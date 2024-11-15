@@ -24,9 +24,9 @@ public class UamScheduleController {
         return history;
     }
 
-    @PostMapping("/Schedule")
-    public ResponseEntity<List<FlightInfo>> uploadCsv(@RequestParam("file") MultipartFile file, @RequestParam("details") String details, WebRequest request) {
-        List<FlightInfo> flights = uamScheduleService.saveFlightsFromCsv(file, details, request);
+    @PostMapping("/schedule")
+    public ResponseEntity<List<FlightInfo>> uploadCsv(@RequestParam("file") MultipartFile file,@RequestParam("title") String title, @RequestParam("details") String details, WebRequest request) {
+        List<FlightInfo> flights = uamScheduleService.saveFlightsFromCsv(file, title, details, request);
         return ResponseEntity.ok(flights);
     }
 

@@ -11,6 +11,9 @@ public class FlightInfo {
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
 
+
+    private int date;
+
     private String flightNumber;
     private int passengers;
     private double cost;
@@ -42,6 +45,14 @@ public class FlightInfo {
 
     public void setId(Long id) {
         this.id = id;
+    }
+
+    public int getDate() {
+        return date;
+    }
+
+    public void setDate(int date) {
+        this.date = date;
     }
 
     public String getFlightNumber() {
@@ -77,6 +88,7 @@ public class FlightInfo {
     public void setWeather(String weather) {
         this.weather = weather;
     }
+
 
     public int getPlannedStart() {
         return plannedStart;
