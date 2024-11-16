@@ -199,7 +199,16 @@ public class UamScheduleService {
 
                 if (!isCancelled) {
                     // 취소되지 않은 경우에만 adjusted 시간을 설정
-                    flight.setAdjustedStart(((Number) schedule.get("adjusted_start_time")).intValue());//json 에서 가져올 때, double로 바꿔서 오류나는 것 해결
+                    int adjustedStart = ((Number) schedule.get("adjusted_start_time")).intValue();
+                    int delayTime = ((Double) schedule.get("delay")).intValue();
+
+                    // isDelayed 값이 0이 아닌 경우 delayTime을 더해 adjustedStart를 업데이트
+                    int delay = flight.isDelayed();
+                    if (delay > 0) {
+                        adjustedStart += delay; // adjusted_start_time에 delay 더함
+                    }
+
+                    flight.setAdjustedStart(adjustedStart);
                     flight.setAdjustedEnd(((Number) schedule.get("adjusted_end_time")).intValue());
                 }
 
