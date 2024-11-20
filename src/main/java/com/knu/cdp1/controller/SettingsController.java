@@ -40,7 +40,7 @@ public class SettingsController {
                         settings.setCancelCost((int) value);
                         break;
                     case "riskAlpha":
-                        settings.setRiskAlpha((int) value);
+                        settings.setRiskAlpha((int) value*1000);
                         break;
                     case "time":
                         settings.setTime((String) value);
