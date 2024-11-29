@@ -38,6 +38,10 @@ public class FlightInfo {
     // 지연 여부 필드
     private int isDelayed;
 
+    // 현재 진척도 (0 ~ 100)
+    private double currentPosition;
+    private String previousTime;
+
     // Getters and Setters
     public Long getId() {
         return id;
@@ -192,5 +196,21 @@ public class FlightInfo {
 
     public void setDelayed(int isDelayed) {
         this.isDelayed = isDelayed;
+    }
+
+    public double getCurrentPosition(){
+        return currentPosition;
+    }
+
+    public void setCurrentPosition(double currentPosition){
+        this.currentPosition = currentPosition;
+    }
+
+    public String getPreviousTime() { 
+        return previousTime; 
+    }
+
+    public void setPreviousTime(String previousTime) { 
+        this.previousTime = previousTime; 
     }
 }

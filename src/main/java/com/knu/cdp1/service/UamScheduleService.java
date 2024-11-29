@@ -343,5 +343,37 @@ public class UamScheduleService {
         return flightMap;
     }
 
+    public List<FlightInfo> calculateFlightPositions() {
+        Settings settings = settingsRepository.findById(1L)
+                .orElseThrow(() -> new RuntimeException("Settings not found"));
+        List<FlightInfo> flights = flightInfoRepository.findAll();
+
+        DateTimeFormatter formatter = DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm:ss");
+        LocalDateTime now = LocalDateTime.parse(settings.getTime(), formatter);
+
+        for (FlightInfo flight: flights) {
+            if (flight.isInFlight()) {
+                int date = flight.getDate();
+                double currentP = flight.getCurrentPosition();
+                long elapsedSeconds = java.time.Duration.between(LocalDateTime.parse(flight.getPreviousTime(), formatter), now).getSeconds();
+
+                LocalDateTime adjustedArrival = LocalDateTime.of(
+                        Integer.parseInt(String.valueOf(date).substring(0, 4)),
+                        Integer.parseInt(String.valueOf(date).substring(4, 6)),
+                        Integer.parseInt(String.valueOf(date).substring(6, 8)),
+                        0, 0, 0
+                ).plusMinutes(flight.getAdjustedEnd());
+
+                double speed = (100 - currentP) / (java.time.Duration.between(now, adjustedArrival).getSeconds());
+                currentP += speed * elapsedSeconds;
+                flight.setCurrentPosition(currentP);
+            }
+            flight.setPreviousTime(now.format(formatter));
+            flightInfoRepository.save(flight);
+        }
+
+        return flights;
+    }
+
 
 }
