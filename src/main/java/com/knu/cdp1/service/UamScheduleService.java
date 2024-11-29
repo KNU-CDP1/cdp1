@@ -103,7 +103,7 @@ public class UamScheduleService {
                 flightInfoRepository.save(flight);
             }
 
-//            this.calculateSchedule();
+            this.calculateSchedule();
 
             // UploadHistory에 업로드 기록 저장
             String fileName = file.getOriginalFilename();
@@ -158,7 +158,7 @@ public class UamScheduleService {
             String jsonData = mapper.writeValueAsString(data);
 
             // Python 스크립트 실행
-            ProcessBuilder processBuilder = new ProcessBuilder("python3", "/root/CDP1/flight_scheduler.py"); // Python 스크립트 경로 설정
+            ProcessBuilder processBuilder = new ProcessBuilder("python3", "C:\\Users\\84802\\Documents\\gw\\web2\\src\\main\\java\\com\\knu\\cdp1\\service\\flight_scheduler.py"); // Python 스크립트 경로 설정
             Process process = processBuilder.start();
 
             // Python으로 데이터 전송
@@ -352,7 +352,8 @@ public class UamScheduleService {
         LocalDateTime now = LocalDateTime.parse(settings.getTime(), formatter);
 
         for (FlightInfo flight: flights) {
-            if (flight.isInFlight()) {
+            String status = this.calculateStatus(flight);
+            if (status.equals("In Flight")||status.equals("Delayed")) {
                 int date = flight.getDate();
                 double currentP = flight.getCurrentPosition();
                 long elapsedSeconds = 10L;
