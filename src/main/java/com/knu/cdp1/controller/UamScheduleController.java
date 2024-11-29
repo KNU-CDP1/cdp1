@@ -49,7 +49,10 @@ public class UamScheduleController {
         return flightData;
     }
 
-
+    @PostMapping("/position")
+    public List<FlightInfo> calculatePosition() {
+        return uamScheduleService.calculateFlightPositions();
+    }
 
 
 }
