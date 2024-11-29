@@ -32,9 +32,9 @@ public class FlightInfoUpdater {
                 flightInfoRepository.updateIsDelayedRandomly();
                 uamScheduleController.calculateSchedule();
             }
-            executionCount++;
+            
         }
-
+        executionCount++;
         uamScheduleController.calculatePosition();
     }
 }

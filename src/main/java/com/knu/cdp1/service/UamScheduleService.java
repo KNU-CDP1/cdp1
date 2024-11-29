@@ -56,6 +56,8 @@ public class UamScheduleService {
             flightMap.put("adjustedDeparture", time.get("adjustedDeparture"));
             flightMap.put("adjustedArrival", time.get("adjustedArrival"));
 
+            flightMap.put("position", flight.getCurrentPosition());
+
             return flightMap;
         }).collect(Collectors.toList());
     }
