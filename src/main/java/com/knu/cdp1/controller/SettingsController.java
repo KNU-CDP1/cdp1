@@ -6,6 +6,7 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
+import java.util.HashMap;
 import java.util.Map;
 import java.util.Optional;
 
@@ -17,10 +18,22 @@ public class SettingsController {
     private SettingsRepository settingsRepository;
 
     // 설정 값을 조회하는 GET 메소드
-    @GetMapping
-    public ResponseEntity<Settings> getSettings() {
-        return ResponseEntity.of(settingsRepository.findById(1L));
+    @GetMapping("/settings")
+    public ResponseEntity<Map<String, Object>> getSettings() {
+        return settingsRepository.findById(1L)
+                .map(settings -> {
+                    // 변환된 값을 담아 반환
+                    Map<String, Object> response = new HashMap<>();
+                    response.put("id", settings.getId());
+                    response.put("delayCost", settings.getDelayCost());
+                    response.put("cancelCost", settings.getCancelCost());
+                    response.put("riskAlpha", settings.getRiskAlpha() / 1000); // 변환
+                    response.put("time", settings.getTime());
+                    return ResponseEntity.ok(response);
+                })
+                .orElse(ResponseEntity.notFound().build());
     }
+
 
     // 설정 값을 부분적으로 업데이트하는 PATCH 메소드
     @PatchMapping
