@@ -355,7 +355,7 @@ public class UamScheduleService {
             if (flight.isInFlight()) {
                 int date = flight.getDate();
                 double currentP = flight.getCurrentPosition();
-                long elapsedSeconds = java.time.Duration.between(LocalDateTime.parse(flight.getPreviousTime(), formatter), now).getSeconds();
+                long elapsedSeconds = 10L;
 
                 LocalDateTime adjustedArrival = LocalDateTime.of(
                         Integer.parseInt(String.valueOf(date).substring(0, 4)),
@@ -367,9 +367,8 @@ public class UamScheduleService {
                 double speed = (100 - currentP) / (java.time.Duration.between(now, adjustedArrival).getSeconds());
                 currentP += speed * elapsedSeconds;
                 flight.setCurrentPosition(currentP);
+                flightInfoRepository.save(flight);
             }
-            flight.setPreviousTime(now.format(formatter));
-            flightInfoRepository.save(flight);
         }
 
         return flights;
