@@ -40,7 +40,6 @@ public class FlightInfo {
 
     // 현재 진척도 (0 ~ 100)
     private double currentPosition;
-    private String previousTime;
 
     // Getters and Setters
     public Long getId() {
@@ -206,11 +205,4 @@ public class FlightInfo {
         this.currentPosition = currentPosition;
     }
 
-    public String getPreviousTime() { 
-        return previousTime; 
-    }
-
-    public void setPreviousTime(String previousTime) { 
-        this.previousTime = previousTime; 
-    }
 }
