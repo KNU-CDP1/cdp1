@@ -352,6 +352,7 @@ public class UamScheduleService {
 
         DateTimeFormatter formatter = DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm:ss");
         LocalDateTime now = LocalDateTime.parse(settings.getTime(), formatter);
+        LocalDateTime previous = now.minusSeconds(10);
 
         for (FlightInfo flight: flights) {
             String status = this.calculateStatus(flight);
@@ -367,7 +368,7 @@ public class UamScheduleService {
                         0, 0, 0
                 ).plusMinutes(flight.getAdjustedEnd());
 
-                double speed = (100 - currentP) / (java.time.Duration.between(now, adjustedArrival).getSeconds());
+                double speed = (100 - currentP) / (java.time.Duration.between(previous, adjustedArrival).getSeconds());
                 currentP += speed * elapsedSeconds;
                 flight.setCurrentPosition(currentP);
                 flightInfoRepository.save(flight);
