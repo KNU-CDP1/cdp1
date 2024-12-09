@@ -6,6 +6,10 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
+import java.time.Instant;
+import java.time.LocalDateTime;
+import java.time.ZoneId;
+import java.time.format.DateTimeFormatter;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.Optional;
@@ -56,7 +60,22 @@ public class SettingsController {
                         settings.setRiskAlpha((int) value*1000);
                         break;
                     case "time":
-                        settings.setTime((String) value);
+                        // time 값을 원하는 형식으로 변환
+                        String timeValue = (String) value;
+                        String formattedTime;
+
+                        if (timeValue.contains("T") && timeValue.contains("Z")) {
+                            // ISO 8601 형식 처리
+                            Instant instant = Instant.parse(timeValue);
+                            LocalDateTime dateTime = LocalDateTime.ofInstant(instant, ZoneId.systemDefault());
+                            DateTimeFormatter formatter = DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm:ss");
+                            formattedTime = dateTime.format(formatter);
+                        } else {
+                            // 이미 원하는 형식인 경우 그대로 사용
+                            formattedTime = timeValue;
+                        }
+
+                        settings.setTime(formattedTime);
                         break;
                     default:
                         // 예상하지 못한 키는 무시
